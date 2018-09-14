@@ -23,10 +23,3 @@ App.route(app, "/", (_, _) => {
 });
 
 App.mount(app, "body");
-
-
-
-
-
-
-
