@@ -23,9 +23,8 @@ App.route(app, "/", (state, emit) => {
   
   main([_class("main-content")],
     [
-      h1(
-         [_class("main-content__header")],
-         [text(sprintf ("Count is %i", state.count))]
+      h1([_class("main-content__header")],
+          [text(sprintf ("Count is %i", state.count))]
       ),
       button([_onclick(onclick)], [text("Click me")])
     ]
