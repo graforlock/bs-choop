@@ -29,7 +29,7 @@ module Html =  {
   type xmlAttributes =
     | BoolAttr(string, bool)
     | StringAttr(string, string)
-    | ObjectAttr(string, {. "__html": string })
+    | InnerHTMLAttr(string, {. "__html": string })
     | FunctionAttr(string, unit => unit);
     
   type xmlElement('a) = (string, array(xmlAttributes));
@@ -48,7 +48,7 @@ module Html =  {
   
   let attr = (key : string, value : string) => StringAttr(key, value);
   let func = (key : string, value : unit => unit) => FunctionAttr(key, value);
-  let obj  = (key : string, value : {. "__html": string }) => ObjectAttr(key, value);
+  let innerHTML  = (key : string, value : {. "__html": string }) => InnerHTMLAttr(key, value);
   let flag = (key : string) => BoolAttr(key, true);
   
   let tag = (nodeName   : string
@@ -186,7 +186,7 @@ module Html =  {
   let summary    = tag ("summary");
 
   module Attributes = {
-      let _dangerouslySetInnerHTML = obj ("dangerouslySetInnerHTML");
+      let _dangerouslySetInnerHTML = innerHTML ("dangerouslySetInnerHTML");
 
       let _abbr               = attr ("abbr");
       let _accept             = attr ("accept");
