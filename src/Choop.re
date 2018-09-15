@@ -1,5 +1,5 @@
 
-/* Reason for below is that ML type systems don't allow
+/* Reason for below is that the ML type systems don't allow
  for neither mixing different types in objects/lists,
  nor untagged union types which is required as a main
  characteristic for DOM API element interfacing.
