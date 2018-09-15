@@ -44,12 +44,12 @@ module Html =  {
   let h = fun
     | ParentNode(tag, attrs, children) => h_(tag, attrs |> toJSObj, Array.of_list(children))
     | VoidElement(tag, attrs) => h_(tag, attrs |> toJSObj, Js.Nullable.undefined)
-    | EncodedText(content) => h_("", Js.Nullable.null, content);
+    | EncodedText(content) => h_(() => content, Js.Nullable.null, Js.Nullable.undefined);
   
   let attr = (key : string, value : string) => StringAttr(key, value);
-  let func = (key : string, value : unit => unit) => FunctionAttr(key, value);
-  let innerHTML  = (key : string, value : {. "__html": string }) => InnerHTMLAttr(key, value);
   let flag = (key : string) => BoolAttr(key, true);
+  let func = (key : string, value : unit => unit) => FunctionAttr(key, value);
+  let innerHTML  = (key : string, value : string) => InnerHTMLAttr(key, [%obj { "__html": value }]);
   
   let tag = (nodeName   : string
           , attributes : list(xmlAttributes)
@@ -60,12 +60,12 @@ module Html =  {
               , attributes : list(xmlAttributes)) =>
       VoidElement (nodeName, Array.of_list(attributes)) |> h;
   
-  let text        = (content : string) => EncodedText (content);
+  let text        = (content : string) => EncodedText (content) |> h;
   let emptyText   = ()                 => text ("");
   
   let html       = tag ("html")
 
-  /* let ``base``   = voidTag ("base") */
+  let base       = voidTag ("base")
   let head       = tag ("head");
   let link = attr => voidTag ("link", attr);
   let meta = attr => voidTag ("meta", attr);
