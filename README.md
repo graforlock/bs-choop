@@ -1,18 +1,36 @@
-# Basic Reason Template
+```ocaml
+open Choop;
+open Choop.Html;
+open Choop.Html.Attributes;
+open Printf;
 
-Hello! This project allows you to quickly get started with Reason and BuckleScript. If you wanted a more sophisticated version, try the `react` template (`bsb -theme react -init .`).
+type state = {
+  mutable count: int
+};
 
-# Build
+let app = App.make();
+
+App.use(app, (state, emitter) => {
+  state.count = 0;
+  Emitter.on(emitter, "increment", count => {
+    state.count = state.count + count;
+    Emitter.emit(emitter, "render", ());
+  });
+});
+
+App.route(app, "/", (state, emit) => {
+  let onclick = () => emit(. "increment", 1);
+  
+  main([_class("main-content")],
+    [
+      h1(
+         [_class("main-content__header")],
+         [text(sprintf ("Count is %i", state.count))]
+      ),
+      button([_onclick(onclick)], [text("Click me")])
+    ]
+  )
+});
+
+App.mount(app, "body");
 ```
-npm run build
-```
-
-# Build + Watch
-
-```
-npm run start
-```
-
-
-# Editor
-If you use `vscode`, Press `Windows + Shift + B` it will build automatically
