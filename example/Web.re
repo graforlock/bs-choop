@@ -1,23 +1,31 @@
 open Choop;
 open Choop.Html;
 open Choop.Html.Attributes;
+open Printf;
 
 type state = {
-  mutable increment: int
+  mutable count: int
 };
 
 let app = App.make();
 
 App.use(app, (state, emitter) => {
-  Js.log(state.increment);
-  Emitter.emit(emitter, "stuff", 10);
+  state.count = 0;
+  Emitter.on(emitter, "increment", count => {
+    state.count = state.count + count;
+    Emitter.emit(emitter, "render", ());
+  });
 });
 
-App.route(app, "/", (_, _) => {
-  main([_class("main-content")], 
+App.route(app, "/", (state, emit) => {
+  let onclick = () => emit(. "increment", 1);
+  
+  main([_class("main-content")],
     [
-      div([_class("section__a")], [encodedText("aa")]),
-      div([_class("section__b")], [])
+      h1([_class("main-content__header")],
+         [text(sprintf ("Count is %i", state.count))]),
+      button([_onclick(onclick)], [text("Click me")]),
+      div([_dangerouslySetInnerHTML([%obj { __html : "<p>Hello</p>" }])], []),
     ]
   )
 });

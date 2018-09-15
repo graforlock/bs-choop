@@ -1,7 +1,18 @@
-open Printf;
+
+let toJSObj = [%raw {|
+  function(l) {
+    return l.reduce((acc, x) => {
+      const [k, v] = x;
+      acc[k] = v;
+      return acc;
+    }, {});
+  }
+|}];
 
 module Emitter = {
   type t;
+
+  type emit('a) = (. string, 'a) => unit;
 
   [@bs.send] external emit: t => string => 'a => unit = "emit";
   [@bs.send] external on: t => string => ('a => unit) => unit = "on"; 
@@ -9,46 +20,46 @@ module Emitter = {
 
 module Html =  {
   type t;
-  
-  type xmlAttribute('a) = (string, 'a);
-  
-  type xmlProperties = Js.Dict.t(string);
-  
-  type xmlElement('a) = (string, array(xmlAttribute('a)));
+
+  type xmlAttributes =
+    | BoolAttr(string, bool)
+    | StringAttr(string, string)
+    | ObjectAttr(string, {. "__html": string })
+    | FunctionAttr(string, unit => unit);
+    
+  type xmlElement('a) = (string, array(xmlAttributes));
   
   type xmlNode =
-      | ParentNode  (string, xmlProperties, list(xmlNode))
-      | VoidElement (string, xmlProperties)
-      | EncodedText (string)      
-      | RawText     (string);
+    | ParentNode  (string, array(xmlAttributes), list(xmlNode))
+    | VoidElement (string, array(xmlAttributes))
+    | EncodedText (string);
 
   [@bs.module] external h_: 'a => 'b => 'c => 'd = "choop/h";
-  
+ 
   let h = fun
-      | ParentNode(tag, attrs, children) => h_(tag, attrs, Array.of_list(children))
-      | VoidElement(tag, attrs) => h_(tag, attrs, Js.Nullable.undefined)
-      | EncodedText(content) => h_("", Js.Nullable.null, content)
-      | RawText(content) => h_("", Js.Nullable.null, content);
+    | ParentNode(tag, attrs, children) => h_(tag, attrs |> toJSObj, Array.of_list(children))
+    | VoidElement(tag, attrs) => h_(tag, attrs |> toJSObj, Js.Nullable.undefined)
+    | EncodedText(content) => h_("", Js.Nullable.null, content);
   
-  let attr = (key : string, value : string) => (key, value);
-  let flag = (key : string) => (key, true);
+  let attr = (key : string, value : string) => StringAttr(key, value);
+  let func = (key : string, value : unit => unit) => FunctionAttr(key, value);
+  let obj  = (key : string, value : {. "__html": string }) => ObjectAttr(key, value);
+  let flag = (key : string) => BoolAttr(key, true);
   
   let tag = (nodeName   : string
-          , attributes : list(xmlAttribute('a))
+          , attributes : list(xmlAttributes)
           , children   : list(xmlNode)) =>
-      ParentNode (nodeName, Js.Dict.fromList(attributes), children) |> h;
+      ParentNode (nodeName, Array.of_list(attributes), children) |> h;
   
   let voidTag = (nodeName  : string
-              , attributes : list(xmlAttribute('a))) =>
-      VoidElement (nodeName, Js.Dict.fromList(attributes)) |> h;
+              , attributes : list(xmlAttributes)) =>
+      VoidElement (nodeName, Array.of_list(attributes)) |> h;
   
-  let encodedText = (content : string) => EncodedText (content);
-  let rawText     = (content : string) => RawText (content);
-  let emptyText   = ()                 => rawText ("");
-  let comment     = (content : string) => rawText (sprintf ("<!-- %s -->", content));
+  let text        = (content : string) => EncodedText (content);
+  let emptyText   = ()                 => text ("");
   
   let html       = tag ("html")
-  
+
   /* let ``base``   = voidTag ("base") */
   let head       = tag ("head");
   let link = attr => voidTag ("link", attr);
@@ -170,6 +181,8 @@ module Html =  {
   let summary    = tag ("summary");
 
   module Attributes = {
+      let _dangerouslySetInnerHTML = obj ("dangerouslySetInnerHTML");
+
       let _abbr               = attr ("abbr");
       let _accept             = attr ("accept");
       let _acceptCharset      = attr ("accept-charset");
@@ -254,44 +267,44 @@ module Html =  {
       let _width              = attr ("width");
       let _wrap               = attr ("wrap");
   
-      let _onclick            = attr ("onclick");
-      let _oncontextmenu      = attr ("oncontextmenu");
-      let _ondblclick         = attr ("ondblclick");
-      let _onmousedown        = attr ("onmousedown");
-      let _onmouseenter       = attr ("onmouseenter");
-      let _onmouseleave       = attr ("onmouseleave");
-      let _onmousemove        = attr ("onmousemove");
-      let _onmouseout         = attr ("onmouseout");
-      let _onmouseover        = attr ("onmouseover");
-      let _onmouseup          = attr ("onmouseup");
+      let _onclick            = func ("onclick");
+      let _oncontextmenu      = func ("oncontextmenu");
+      let _ondblclick         = func ("ondblclick");
+      let _onmousedown        = func ("onmousedown");
+      let _onmouseenter       = func ("onmouseenter");
+      let _onmouseleave       = func ("onmouseleave");
+      let _onmousemove        = func ("onmousemove");
+      let _onmouseout         = func ("onmouseout");
+      let _onmouseover        = func ("onmouseover");
+      let _onmouseup          = func ("onmouseup");
   
-      let _ontouchcancel      = attr ("ontouchcancel");
-      let _ontouchend         = attr ("ontouchend");
-      let _ontouchmove        = attr ("ontouchmove");
-      let _ontouchstart       = attr ("ontouchstart");
+      let _ontouchcancel      = func ("ontouchcancel");
+      let _ontouchend         = func ("ontouchend");
+      let _ontouchmove        = func ("ontouchmove");
+      let _ontouchstart       = func ("ontouchstart");
   
-      let _onkeydown          = attr ("onkeydown");
-      let _onkeypress         = attr ("onkeypress");
-      let _onkeyup            = attr ("onkeyup");
+      let _onkeydown          = func ("onkeydown");
+      let _onkeypress         = func ("onkeypress");
+      let _onkeyup            = func ("onkeyup");
   
-      let _ondrag             = attr ("ondrag");
-      let _ondragend          = attr ("ondragend");
-      let _ondragenter        = attr ("ondragenter");
-      let _ondragleave        = attr ("ondragleave");
-      let _ondragover         = attr ("ondragover");
-      let _ondragstart        = attr ("ondragstart");
-      let _ondrop             = attr ("ondrop");
+      let _ondrag             = func ("ondrag");
+      let _ondragend          = func ("ondragend");
+      let _ondragenter        = func ("ondragenter");
+      let _ondragleave        = func ("ondragleave");
+      let _ondragover         = func ("ondragover");
+      let _ondragstart        = func ("ondragstart");
+      let _ondrop             = func ("ondrop");
   
-      let _onblur              = attr ("onblur");
-      let _onfocus             = attr ("onfocus");
-      let _onfocusin           = attr ("onfocusin");
-      let _onfocusout          = attr ("onfocusout");
+      let _onblur              = func ("onblur");
+      let _onfocus             = func ("onfocus");
+      let _onfocusin           = func ("onfocusin");
+      let _onfocusout          = func ("onfocusout");
   
-      let _oninput             = attr ("oninput");
+      let _oninput             = func ("oninput");
   
-      let _onwheel            = attr ("onwheel");
+      let _onwheel            = func ("onwheel");
   
-      let _async              = flag ("async");
+      let _async              = flag("async");
       let _autofocus          = flag ("autofocus");
       let _autoplay           = flag ("autoplay");
       let _checked            = flag ("checked");
@@ -440,10 +453,10 @@ module Html =  {
 module App = {
   type t;
 
-  type render('a) = 'a => Emitter.t => Html.t;
+  type render('a, 'b) = 'a => Emitter.emit('b) => Html.t;
 
   [@bs.module] external make: unit => t = "choop";
   [@bs.send] external use: t => (('a, Emitter.t) => unit) => unit = "use";
-  [@bs.send] external route: t => string => render('a) => unit = "route";
+  [@bs.send] external route: t => string => render('a, 'b) => unit = "route";
   [@bs.send] external mount: t => string => unit = "mount";
 };
