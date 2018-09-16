@@ -34,3 +34,9 @@ App.route(app, "/", ({count}, emit) => {
 
 App.mount(app, "body");
 ```
+
+TODO:
+
+- Integrate Preact's Component API
+- Make JSX compatible
+- Decent Unit test coverage
