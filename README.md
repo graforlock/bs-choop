@@ -40,3 +40,4 @@ TODO:
 - Integrate Preact's Component API
 - Make JSX compatible
 - Decent Unit test coverage
+- Release an NPM beta package
